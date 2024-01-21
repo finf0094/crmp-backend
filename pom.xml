@@ -12,7 +12,7 @@
 	<artifactId>app</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>app</name>
-	<description>Qbm project</description>
+	<description>mikosh sborka</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>

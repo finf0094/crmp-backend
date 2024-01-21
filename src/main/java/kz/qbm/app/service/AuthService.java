@@ -61,72 +61,84 @@ public class AuthService {
             );
         }
 
-        if (userRepository.findByItin(registerRequest.getItin()).isPresent()) {
+        if (userRepository.findByUsername(registerRequest.getUsername()).isPresent()) {
             throw new AuthenticationException(
-                    String.format("Пользователь с ИИН '%s' уже существует", registerRequest.getEmail()),
+                    String.format("Пользователь с username '%s' уже существует", registerRequest.getEmail()),
                     HttpStatus.BAD_REQUEST
             );
         }
 
         User user = User.builder()
-                .itin(registerRequest.getItin())
+                .username(registerRequest.getUsername())
                 .email(registerRequest.getEmail())
+                .SID(registerRequest.getSID())
                 .roles(List.of(roleService.findByName("ROLE_USER")))
-                .firstname("")
-                .lastname("")
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
                 .build();
 
         userRepository.save(user);
 
-
         return ResponseEntity.status(HttpStatus.CREATED).body("USER SUCCESSFULLY CREATED");
     }
 
-
     public ResponseEntity<?> loginUser(AuthRequest authRequest) {
+        User user = userRepository.findByUsername(authRequest.getUsername())
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с именем %s не найден", authRequest.getUsername())));
 
-            try {
-                authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                        authRequest.getItin(), authRequest.getPassword()
-                ));
-            }  catch (BadCredentialsException e) {
-                throw new AuthenticationException("Пароль неправильный", HttpStatus.UNAUTHORIZED);
+        // Проверка SID при логине через десктоп приложение
+        if (authRequest.getSID() != null) {
+            if (user.getSID() == null) {
+                // Если SID еще не установлен, сохраняем его
+                user.setSID(authRequest.getSID());
+                userRepository.save(user);
+            } else if (!authRequest.getSID().equals(user.getSID())) {
+                // Если SID уже установлен и не совпадает, отклоняем аутентификацию
+                throw new AuthenticationException("SID не совпадает с тем что находиться в базе данных", HttpStatus.UNAUTHORIZED);
             }
+        }
 
-                CustomUserDetails userDetails = customUserDetailsService.loadUserByUsername(authRequest.getItin());
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                    authRequest.getUsername(), authRequest.getPassword()
+            ));
+        } catch (BadCredentialsException e) {
+            throw new AuthenticationException("Пароль неправильный", HttpStatus.UNAUTHORIZED);
+        }
 
-                Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+        CustomUserDetails userDetails = customUserDetailsService.loadUserByUsername(authRequest.getUsername());
 
-                String accessToken = jwtService.generateAccessToken(userDetails);
-                String refreshToken = jwtService.generateRefreshToken(userDetails);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                userRefreshTokenMap.put(userDetails.getItin(), refreshToken);
+        String accessToken = jwtService.generateAccessToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-                UserResponse userResponse = createUserResponse(userDetails);
+        userRefreshTokenMap.put(userDetails.getUsername(), refreshToken);
 
-                AuthResponse authResponse = AuthResponse.builder()
-                        .access_token(accessToken)
-                        .refresh_token(refreshToken)
-                        .userInfo(userResponse)
-                        .build();
+        UserResponse userResponse = createUserResponse(userDetails);
 
-                return ResponseEntity.ok(authResponse);
+        AuthResponse authResponse = AuthResponse.builder()
+                .access_token(accessToken)
+                .refresh_token(refreshToken)
+                .userInfo(userResponse)
+                .build();
+
+        return ResponseEntity.ok(authResponse);
     }
 
     public ResponseEntity<?> getAccessTokenByRefreshToken(String refreshToken) {
-        String itin = jwtService.getRefreshTokenItin(refreshToken);
-        if (jwtService.isRefreshTokenValid(refreshToken) && userRefreshTokenMap.containsKey(itin)) {
+        String username = jwtService.getRefreshTokenUsername(refreshToken);
+        if (jwtService.isRefreshTokenValid(refreshToken) && userRefreshTokenMap.containsKey(username)) {
 
-            User user = userRepository.findByItin(itin).orElseThrow(
-                    () -> new NotFoundException(String.format("User with itin %s not found", itin))
+            User user = userRepository.findByUsername(username).orElseThrow(
+                    () -> new NotFoundException(String.format("User with username %s not found", username))
             );
 
             CustomUserDetails userDetails = new CustomUserDetails(
-                    user.getItin(),
+                    user.getUsername(),
                     user.getPassword(),
                     user.getEmail(),
+                    user.getSID(),
                     user.getRoles().stream()
                             .map(role -> new SimpleGrantedAuthority(role.getName()))
                             .collect(Collectors.toList())
@@ -154,8 +166,8 @@ public class AuthService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
         return UserResponse.builder()
+                .username(customUserDetails.getUsername())
                 .email(customUserDetails.getEmail())
-                .itin(customUserDetails.getItin())
                 .roles(roleList)
                 .build();
     }

@@ -21,16 +21,16 @@ public class CustomUserDetailsService implements UserDetailsService {
 
 
     @Override
-    public CustomUserDetails loadUserByUsername(String itin) throws UsernameNotFoundException {
-
-        User user = userRepository.findByItin(itin).orElseThrow(
-                () -> new NotFoundException(String.format("user with itin %s not found", itin))
+    public CustomUserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username).orElseThrow(
+                () -> new NotFoundException(String.format("user with username %s not found", username))
         );
 
         return new CustomUserDetails(
-                user.getItin(),
+                user.getUsername(),
                 user.getPassword(),
                 user.getEmail(),
+                user.getSID(),
                 user.getRoles().stream()
                         .map(role -> new SimpleGrantedAuthority(role.getName()))
                         .collect(Collectors.toList())

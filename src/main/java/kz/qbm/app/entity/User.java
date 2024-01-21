@@ -25,14 +25,14 @@ public class User {
     @Column(nullable = false)
     private Long id;
 
-    @Column(nullable = false)
-    private String itin;
+    @Column(nullable = false, unique = true, length = 15)
+    private String username;
 
-    @Column(nullable = false)
-    private String firstname;
+    @Column(unique = true, length = 100, nullable = false)
+    private String email;
 
-    @Column(nullable = false)
-    private String lastname;
+    @Column(unique = true)
+    private String SID;
 
     @ManyToMany
     @JoinTable(
@@ -42,9 +42,6 @@ public class User {
     )
     @Column(nullable = false)
     private List<Role> roles;
-
-    @Column(unique = true, length = 100, nullable = false)
-    private String email;
 
     @Column(nullable = false)
     private String password;
@@ -56,7 +53,4 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Date updatedAt;
-
-    @Column(name = "resume_url")
-    private String resumeUrl;
 }

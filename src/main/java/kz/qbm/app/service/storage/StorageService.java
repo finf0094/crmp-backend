@@ -1,6 +1,6 @@
 package kz.qbm.app.service.storage;
 
-import jakarta.annotation.Resource;
+import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Path;
@@ -21,3 +21,4 @@ public interface StorageService {
     void deleteAll();
 
     void delete(String filename);
+}

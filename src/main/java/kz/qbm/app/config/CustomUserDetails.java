@@ -7,9 +7,12 @@ import java.util.Collection;
 
 
 public class CustomUserDetails implements UserDetails {
-    private String itin;
+
+    private String username;
     private String password;
     private String email;
+
+    private String SID;
     private Collection<? extends GrantedAuthority> authorities;
     private boolean accountNonExpired;
     private boolean accountNonLocked;
@@ -17,10 +20,11 @@ public class CustomUserDetails implements UserDetails {
     private boolean enabled;
 
 
-    public CustomUserDetails(String itin, String password, String email, Collection<? extends GrantedAuthority> authorities) {
-        this.itin = itin;
+    public CustomUserDetails(String username, String password, String email, String SID, Collection<? extends GrantedAuthority> authorities) {
+        this.username = username;
         this.password = password;
         this.email = email;
+        this.SID = SID;
         this.authorities = authorities;
         this.accountNonExpired = true;
         this.accountNonLocked = true;
@@ -47,9 +51,7 @@ public class CustomUserDetails implements UserDetails {
         return email;
     }
 
-    public String getItin() {
-        return itin;
-    }
+    public String getSID() {return SID; }
     @Override
     public boolean isAccountNonExpired() {
         return accountNonExpired;

@@ -31,7 +31,7 @@ public class JwtService {
 
         claims.put("roles", roleList);
         claims.put("email", userDetails.getEmail());
-        claims.put("itin", userDetails.getItin());
+        claims.put("username", userDetails.getUsername());
 
         Date issuedDate = new Date();
         Date expiredDate = new Date(issuedDate.getTime() + jwtLifetime.toMillis());
@@ -50,7 +50,7 @@ public class JwtService {
     }
 
     public String getUsername(String token) {
-        return getAccessTokenClaims(token).get("itin", String.class);
+        return getAccessTokenClaims(token).get("username", String.class);
     }
 
     public Claims getAccessTokenClaims(String token) {
@@ -74,7 +74,7 @@ public class JwtService {
     public String generateRefreshToken(CustomUserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", userDetails.getEmail());
-        claims.put("itin", userDetails.getItin());
+        claims.put("username", userDetails.getUsername());
         return Jwts.builder()
                 .setSubject("refresh_token")
                 .setClaims(claims)
@@ -124,7 +124,7 @@ public class JwtService {
         }
     }
 
-    public String getRefreshTokenItin(String refreshToken) {
-        return getRefreshTokenClaims(refreshToken).get("itin", String.class);
+    public String getRefreshTokenUsername(String refreshToken) {
+        return getRefreshTokenClaims(refreshToken).get("username", String.class);
     }
 }
